@@ -1,0 +1,7 @@
+include ':api'
+include ':util'
+include ':microservices:post-service'
+include ':microservices:comment-service'
+include ':microservices:reaction-service'
+include ':microservices:image-service'
+include ':microservices:post-composite-service'

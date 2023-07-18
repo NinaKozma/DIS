@@ -1,0 +1,91 @@
+api:
+
+  common:
+    version: 1.0.0
+    title: Sample API
+    description: Description of the API...
+    termsOfServiceUrl: MINE TERMS OF SERVICE URL
+    license: License
+    licenseUrl: MY LICENSE URL
+
+    contact:
+      name: Nina Kozma
+      url: My LinkedIn --> https://www.linkedin.com/in/nina-kozma-1a347319/
+      email: nina.kozma@gmail.com
+
+  post-composite:
+
+    get-composite-post:
+      description: Returns a composite view of the specified post id
+      notes: |
+        # Normal response
+        If the requested post id is found the method will return information regarding:
+        1. Post information
+        1. Comments
+        1. Reactions
+        1. Images
+        1. Service Addresses
+        (technical information regarding the addresses of the microservices that created the response)
+
+        # Expected partial and error responses
+        1. If no post information is found, a <b>404 - Not Found</b> error will be returned
+        1. In no reactions, images or comments are found for a post, a partial response will be returned
+
+    create-composite-post:
+      description: Creates a composite post
+      notes: |
+        # Normal response
+        The composite post information posted to the API will be splitted up and stored as separate post-info, image, reaction and comment entities.
+
+        # Expected error responses
+        1. If a post with the same postId as specified in the posted information already exists,
+           an <b>422 - Unprocessable Entity</b> error with a "duplicate key" error message will be returned
+
+    delete-composite-post:
+      description: Deletes a post composite
+      notes: |
+        # Normal response
+        Entities for post information, images, reactions and comments related to the specificed postId will be deleted.
+        The implementation of the delete method is idempotent, i.e. it can be called several times with the same response.
+        This means that a delete request of a non existing post will return <b>200 Ok</b>.
+
+server.port: 7000
+server.error.include-message: always
+
+app:
+  post-service:
+    host: localhost
+    port: 7001
+  reaction-service:
+    host: localhost
+    port: 7002
+  comment-service:
+    host: localhost
+    port: 7003
+  image-service:
+    host: localhost
+    port: 7004
+
+logging:
+  level:
+    root: INFO
+    se.magnus: DEBUG
+
+---
+spring.profiles: docker
+
+server.port: 8081
+
+app:
+  post-service:
+    host: post
+    port: 8081
+  reaction-service:
+    host: reaction
+    port: 8081
+  comment-service:
+    host: comment
+    port: 8081
+  image-service:
+    host: image
+    port: 8081
