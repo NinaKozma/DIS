@@ -73,7 +73,7 @@ public class PostCompositeServiceApplicationTests {
 	@Test
 	public void createCompositePost1() {
 
-		PostAggregate compositePost = new PostAggregate(1, "type of post", LocalDate.now(), "post caption", null, null,
+		PostAggregate compositePost = new PostAggregate(1, "type of post", "post caption", LocalDate.now(), null, null,
 				null, null);
 
 		postAndVerifyPost(compositePost, OK);
@@ -81,20 +81,20 @@ public class PostCompositeServiceApplicationTests {
 
 	@Test
 	public void createCompositePost2() {
-		PostAggregate compositePost = new PostAggregate(1, "type of post", LocalDate.now(), "post caption",
+		PostAggregate compositePost = new PostAggregate(1, "type of post", "post caption", LocalDate.now(),
 				singletonList(new ReactionSummary(1, "type of reaction")),
 				singletonList(new CommentSummary(1, "comment text", LocalDate.now())),
-				singletonList(new ImageSummary(1, LocalDate.now(), "image url")), null);
+				singletonList(new ImageSummary(1, "image url", LocalDate.now())), null);
 
 		postAndVerifyPost(compositePost, OK);
 	}
 
 	@Test
 	public void deleteCompositePost() {
-		PostAggregate compositePost = new PostAggregate(1, "type of post", LocalDate.now(), "post caption",
+		PostAggregate compositePost = new PostAggregate(1, "type of post", "post caption", LocalDate.now(),
 				singletonList(new ReactionSummary(1, "type of reaction")),
 				singletonList(new CommentSummary(1, "comment text", LocalDate.now())),
-				singletonList(new ImageSummary(1, LocalDate.now(), "image url")), null);
+				singletonList(new ImageSummary(1, "image url", LocalDate.now())), null);
 
 		postAndVerifyPost(compositePost, OK);
 

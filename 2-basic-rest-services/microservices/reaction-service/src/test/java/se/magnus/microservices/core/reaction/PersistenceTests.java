@@ -100,7 +100,7 @@ public class PersistenceTests {
         // Get the updated entity from the database and verify its new sate
         ReactionEntity updatedEntity = repository.findById(savedEntity.getId()).block();
         assertEquals(1, (int)updatedEntity.getVersion());
-        assertEquals("Type of reaction updated", updatedEntity.getAuthor());
+        assertEquals("Type of reaction updated", updatedEntity.getTypeOfReaction());
     }
 
     private void assertEqualsReaction(ReactionEntity expectedEntity, ReactionEntity actualEntity) {

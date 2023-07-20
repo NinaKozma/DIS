@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.health.Health;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.messaging.MessageChannel;
@@ -34,19 +36,17 @@ import static se.magnus.api.event.Event.Type.DELETE;
 
 @EnableBinding(PostCompositeIntegration.MessageSources.class)
 @Component
-public class PostCompositeIntegration implements PostService, ReactionService, CommentService {
+public class PostCompositeIntegration implements PostService, ReactionService, CommentService, ImageService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PostCompositeIntegration.class);
 
-	private final String postServiceUrl = "http://post";
-	private final String reactionServiceUrl = "http://reaction";
-	private final String commentServiceUrl = "http://comment";
-	private final String imageServiceUrl = "http://image";
-
+	private final WebClient webClient;
 	private final ObjectMapper mapper;
-	private final WebClient.Builder webClientBuilder;
 
-	private WebClient webClient;
+	private final String postServiceUrl;
+	private final String reactionServiceUrl;
+	private final String commentServiceUrl;
+	private final String imageServiceUrl;
 
 	private MessageSources messageSources;
 
@@ -71,11 +71,28 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 	}
 
 	@Autowired
-	public PostCompositeIntegration(WebClient.Builder webClientBuilder, ObjectMapper mapper,
-			MessageSources messageSources) {
-		this.webClientBuilder = webClientBuilder;
+	public PostCompositeIntegration(WebClient.Builder webClient, ObjectMapper mapper, MessageSources messageSources,
+
+			@Value("${app.post-service.host}") String postServiceHost,
+			@Value("${app.post-service.port}") int postServicePort,
+
+			@Value("${app.reaction-service.host}") String reactionServiceHost,
+			@Value("${app.reaction-service.port}") int reactionServicePort,
+
+			@Value("${app.comment-service.host}") String commentServiceHost,
+			@Value("${app.comment-service.port}") int commentServicePort,
+
+			@Value("${app.image-service.host}") String imageServiceHost,
+			@Value("${app.image-service.port}") int imageServicePort) {
+
+		this.webClient = webClient.build();
 		this.mapper = mapper;
 		this.messageSources = messageSources;
+
+		postServiceUrl = "http://" + postServiceHost + ":" + postServicePort;
+		reactionServiceUrl = "http://" + reactionServiceHost + ":" + reactionServicePort;
+		commentServiceUrl = "http://" + commentServiceHost + ":" + commentServicePort;
+		imageServiceUrl = "http://" + imageServiceHost + ":" + imageServicePort;
 	}
 
 	@Override
@@ -90,7 +107,7 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 		String url = postServiceUrl + "/post/" + postId;
 		LOG.debug("Will call the getPost API on URL: {}", url);
 
-		return getWebClient().get().uri(url).retrieve().bodyToMono(Post.class).log()
+		return webClient.get().uri(url).retrieve().bodyToMono(Post.class).log()
 				.onErrorMap(WebClientResponseException.class, ex -> handleException(ex));
 	}
 
@@ -115,8 +132,7 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 
 		// Return an empty result if something goes wrong to make it possible for the
 		// composite service to return partial responses
-		return getWebClient().get().uri(url).retrieve().bodyToFlux(Reaction.class).log()
-				.onErrorResume(error -> empty());
+		return webClient.get().uri(url).retrieve().bodyToFlux(Reaction.class).log().onErrorResume(error -> empty());
 	}
 
 	@Override
@@ -140,7 +156,7 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 
 		// Return an empty result if something goes wrong to make it possible for the
 		// composite service to return partial responses
-		return getWebClient().get().uri(url).retrieve().bodyToFlux(Comment.class).log().onErrorResume(error -> empty());
+		return webClient.get().uri(url).retrieve().bodyToFlux(Comment.class).log().onErrorResume(error -> empty());
 
 	}
 
@@ -148,7 +164,7 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 	public void deleteComments(int postId) {
 		messageSources.outputComments().send(MessageBuilder.withPayload(new Event(DELETE, postId, null)).build());
 	}
-	
+
 	@Override
 	public Image createImage(Image body) {
 		messageSources.outputImages()
@@ -165,7 +181,7 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 
 		// Return an empty result if something goes wrong to make it possible for the
 		// composite service to return partial responses
-		return getWebClient().get().uri(url).retrieve().bodyToFlux(Image.class).log().onErrorResume(error -> empty());
+		return webClient.get().uri(url).retrieve().bodyToFlux(Image.class).log().onErrorResume(error -> empty());
 
 	}
 
@@ -174,11 +190,27 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 		messageSources.outputImages().send(MessageBuilder.withPayload(new Event(DELETE, postId, null)).build());
 	}
 
-	private WebClient getWebClient() {
-		if (webClient == null) {
-			webClient = webClientBuilder.build();
-		}
-		return webClient;
+	public Mono<Health> getPostHealth() {
+		return getHealth(postServiceUrl);
+	}
+
+	public Mono<Health> getReactionHealth() {
+		return getHealth(reactionServiceUrl);
+	}
+
+	public Mono<Health> getCommentHealth() {
+		return getHealth(commentServiceUrl);
+	}
+
+	public Mono<Health> getImageHealth() {
+		return getHealth(imageServiceUrl);
+	}
+
+	private Mono<Health> getHealth(String url) {
+		url += "/actuator/health";
+		LOG.debug("Will call the Health API on URL: {}", url);
+		return webClient.get().uri(url).retrieve().bodyToMono(String.class).map(s -> new Health.Builder().up().build())
+				.onErrorResume(ex -> Mono.just(new Health.Builder().down(ex).build())).log();
 	}
 
 	private Throwable handleException(Throwable ex) {

@@ -23,53 +23,56 @@ public class PostServiceImpl implements PostService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PostServiceImpl.class);
 
-    private final ServiceUtil serviceUtil;
+	private final ServiceUtil serviceUtil;
 
-    private final PostRepository repository;
+	private final PostRepository repository;
 
-    private final PostMapper mapper;
+	private final PostMapper mapper;
 
-    @Autowired
-    public PostServiceImpl(PostRepository repository, PostMapper mapper, ServiceUtil serviceUtil) {
-        this.repository = repository;
-        this.mapper = mapper;
-        this.serviceUtil = serviceUtil;
-    }
+	@Autowired
+	public PostServiceImpl(PostRepository repository, PostMapper mapper, ServiceUtil serviceUtil) {
+		this.repository = repository;
+		this.mapper = mapper;
+		this.serviceUtil = serviceUtil;
+	}
 
-    @Override
-    public Post createPost(Post body) {
+	@Override
+	public Post createPost(Post body) {
 
-        if (body.getPostId() < 1) throw new InvalidInputException("Invalid postId: " + body.getPostId());
+		if (body.getPostId() < 1)
+			throw new InvalidInputException("Invalid postId: " + body.getPostId());
 
-        PostEntity entity = mapper.apiToEntity(body);
-        Mono<Post> newEntity = repository.save(entity)
-            .log()
-            .onErrorMap(
-                DuplicateKeyException.class,
-                ex -> new InvalidInputException("Duplicate key, Post Id: " + body.getPostId()))
-            .map(e -> mapper.entityToApi(e));
+		PostEntity entity = mapper.apiToEntity(body);
+		
+		Mono<Post> newEntity = repository.save(entity).log()
+				.onErrorMap(DuplicateKeyException.class,
+						ex -> new InvalidInputException("Duplicate key, Post Id: " + body.getPostId()))
+				.map(e -> mapper.entityToApi(e));
 
-        return newEntity.block();
-    }
+		return newEntity.block();
+	}
 
-    @Override
-    public Mono<Post> getPost(int postId) {
+	@Override
+	public Mono<Post> getPost(int postId) {
 
-        if (postId < 1) throw new InvalidInputException("Invalid postId: " + postId);
+		if (postId < 1)
+			throw new InvalidInputException("Invalid postId: " + postId);
 
-        return repository.findByPostId(postId)
-            .switchIfEmpty(error(new NotFoundException("No post found for postId: " + postId)))
-            .log()
-            .map(e -> mapper.entityToApi(e))
-            .map(e -> {e.setServiceAddress(serviceUtil.getServiceAddress()); return e;});
-    }
+		return repository.findByPostId(postId)
+				.switchIfEmpty(error(new NotFoundException("No post found for postId: " + postId))).log()
+				.map(e -> mapper.entityToApi(e)).map(e -> {
+					e.setServiceAddress(serviceUtil.getServiceAddress());
+					return e;
+				});
+	}
 
-    @Override
-    public void deletePost(int postId) {
+	@Override
+	public void deletePost(int postId) {
 
-        if (postId < 1) throw new InvalidInputException("Invalid postId: " + postId);
+		if (postId < 1)
+			throw new InvalidInputException("Invalid postId: " + postId);
 
-        LOG.debug("deletePost: tries to delete an entity with postId: {}", postId);
-        repository.findByPostId(postId).log().map(e -> repository.delete(e)).flatMap(e -> e).block();
-    }
+		LOG.debug("deletePost: tries to delete an entity with postId: {}", postId);
+		repository.findByPostId(postId).log().map(e -> repository.delete(e)).flatMap(e -> e).block();
+	}
 }

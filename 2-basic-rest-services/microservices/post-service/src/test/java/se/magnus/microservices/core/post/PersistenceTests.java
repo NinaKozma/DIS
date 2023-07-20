@@ -1,7 +1,5 @@
 package se.magnus.microservices.core.post;
 
-import java.time.LocalDate;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,9 +8,13 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.junit4.SpringRunner;
-import reactor.test.StepVerifier;
-import se.magnus.microservices.core.post.persistence.PostEntity;
-import se.magnus.microservices.core.post.persistence.PostRepository;
+import se.magnus.microservices.core.post.persistence.*;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @DataMongoTest
@@ -24,92 +26,89 @@ public class PersistenceTests {
 	private PostEntity savedEntity;
 
 	@Before
-	public void setupDb() {
-		StepVerifier.create(repository.deleteAll()).verifyComplete();
+   	public void setupDb() {
+   		repository.deleteAll().block();
 
-		PostEntity entity = new PostEntity(1, "Type of post", "Post caption", LocalDate.now());
-		StepVerifier.create(repository.save(entity)).expectNextMatches(createdEntity -> {
-			savedEntity = createdEntity;
-			return arePostEqual(entity, savedEntity);
-		}).verifyComplete();
-	}
+        PostEntity entity = new PostEntity(1, "Type of post", "Post Caption", LocalDate.now());
+        savedEntity = repository.save(entity).block();
 
-	@Test
-	public void create() {
-		PostEntity newEntity = new PostEntity(2, "Type of post", "Post caption", LocalDate.now());
+        assertEqualsPost(entity, savedEntity);
+    }
 
-		StepVerifier.create(repository.save(newEntity))
-				.expectNextMatches(createdEntity -> newEntity.getPostId() == createdEntity.getPostId())
-				.verifyComplete();
 
-		StepVerifier.create(repository.findById(newEntity.getId()))
-				.expectNextMatches(foundEntity -> arePostEqual(newEntity, foundEntity)).verifyComplete();
+    @Test
+   	public void create() {
 
-		StepVerifier.create(repository.count()).expectNext(2l).verifyComplete();
-	}
+        PostEntity newEntity = new PostEntity(2, "Type of post", "Post Caption", LocalDate.now());
+        repository.save(newEntity).block();
 
-	@Test
-	public void update() {
-		savedEntity.setPostCaption("Updated post caption");
-		StepVerifier.create(repository.save(savedEntity))
-				.expectNextMatches(updatedEntity -> updatedEntity.getPostCaption().equals("Updated post caption"))
-				.verifyComplete();
+        PostEntity foundEntity = repository.findById(newEntity.getId()).block();
+        assertEqualsPost(newEntity, foundEntity);
 
-		StepVerifier.create(repository.findById(savedEntity.getId()))
-				.expectNextMatches(foundEntity -> foundEntity.getVersion() == 1
-						&& foundEntity.getPostCaption().equals("Updated post caption"))
-				.verifyComplete();
-	}
+        assertEquals(2, (long)repository.count().block());
+    }
 
-	@Test
-	public void delete() {
-		StepVerifier.create(repository.delete(savedEntity)).verifyComplete();
-		StepVerifier.create(repository.existsById(savedEntity.getId())).expectNext(false).verifyComplete();
-	}
+    @Test
+   	public void update() {
+        savedEntity.setTypeOfPost("Type of post updated");
+        repository.save(savedEntity).block();
 
-	@Test
-	public void getByPostId() {
+        PostEntity foundEntity = repository.findById(savedEntity.getId()).block();
+        assertEquals(1, (long)foundEntity.getVersion());
+        assertEquals("Type of post updated", foundEntity.getTypeOfPost());
+    }
 
-		StepVerifier.create(repository.findByPostId(savedEntity.getPostId()))
-				.expectNextMatches(foundEntity -> arePostEqual(savedEntity, foundEntity)).verifyComplete();
-	}
+    @Test
+   	public void delete() {
+        repository.delete(savedEntity).block();
+        assertFalse(repository.existsById(savedEntity.getId()).block());
+    }
 
-	@Test
-	public void duplicateError() {
-		PostEntity entity = new PostEntity(savedEntity.getPostId(), "Type of post", "Post caption", LocalDate.now());
-		StepVerifier.create(repository.save(entity)).expectError(DuplicateKeyException.class).verify();
-	}
+    @Test
+   	public void getByPostId() {
+        PostEntity foundEntity = repository.findByPostId(savedEntity.getPostId()).block();
+        
+        assertEqualsPost(savedEntity, foundEntity);
+    }
 
-	@Test
-	public void optimisticLockError() {
+    @Test(expected = DuplicateKeyException.class)
+   	public void duplicateError() {
+        PostEntity entity = new PostEntity(1, "Type of post", "Post Caption", LocalDate.now());
+        repository.save(entity).block();
+    }
 
-		// Store the saved entity in two separate entity objects
-		PostEntity entity1 = repository.findById(savedEntity.getId()).block();
-		PostEntity entity2 = repository.findById(savedEntity.getId()).block();
+    @Test
+   	public void optimisticLockError() {
 
-		// Update the entity using the first entity object
-		entity1.setPostCaption("Updated post caption");
-		repository.save(entity1).block();
+        // Store the saved entity in two separate entity objects
+        PostEntity entity1 = repository.findById(savedEntity.getId()).block();
+        PostEntity entity2 = repository.findById(savedEntity.getId()).block();
 
-		// Update the entity using the second entity object.
-		// This should fail since the second entity now holds a old version number, i.e.
-		// a Optimistic Lock Error
-		entity2.setTypeOfReaction("Updated post caption again...");
-		StepVerifier.create(repository.save(entity2)).expectError(OptimisticLockingFailureException.class).verify();
+        // Update the entity using the first entity object
+        entity1.setTypeOfPost("Type of post updated");
+        repository.save(entity1).block();
 
-		// Get the updated entity from the database and verify its new sate
-		StepVerifier.create(repository.findById(savedEntity.getId()))
-				.expectNextMatches(foundEntity -> foundEntity.getVersion() == 1
-						&& foundEntity.getPostCaption().equals("Updated post caption"))
-				.verifyComplete();
-	}
+        //  Update the entity using the second entity object.
+        // This should fail since the second entity now holds a old version number, i.e. a Optimistic Lock Error
+        try {
+        	entity2.setTypeOfPost("Type of post updated again...");
+            repository.save(entity2).block();
 
-	private boolean arePostEqual(PostEntity expectedEntity, PostEntity actualEntity) {
-		return (expectedEntity.getId().equals(actualEntity.getId()))
-				&& (expectedEntity.getVersion() == actualEntity.getVersion())
-				&& (expectedEntity.getPostId() == actualEntity.getPostId())
-				&& (expectedEntity.getTypeOfPost().equals(actualEntity.getTypeOfPost()))
-				&& (expectedEntity.getPostCaption() == actualEntity.getPostCaption())
-				&& (expectedEntity.getPostedOn().equals(actualEntity.getPostedOn()));
-	}
+            fail("Expected an OptimisticLockingFailureException");
+        } catch (OptimisticLockingFailureException e) {}
+
+        // Get the updated entity from the database and verify its new sate
+        PostEntity updatedEntity = repository.findById(savedEntity.getId()).block();
+        assertEquals(1, (int)updatedEntity.getVersion());
+        assertEquals("Type of post updated", updatedEntity.getTypeOfPost());
+    }
+
+    private void assertEqualsPost(PostEntity expectedEntity, PostEntity actualEntity) {
+        assertEquals(expectedEntity.getId(),               actualEntity.getId());
+        assertEquals(expectedEntity.getVersion(),          actualEntity.getVersion());
+        assertEquals(expectedEntity.getPostId(),        actualEntity.getPostId());
+        assertEquals(expectedEntity.getTypeOfPost(), actualEntity.getTypeOfPost());
+        assertEquals(expectedEntity.getPostCaption(),           actualEntity.getPostCaption());
+        assertEquals(expectedEntity.getPostedOn(),           actualEntity.getPostedOn());
+    }
 }

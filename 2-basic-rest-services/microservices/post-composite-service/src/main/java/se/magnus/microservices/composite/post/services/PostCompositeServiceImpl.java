@@ -3,6 +3,7 @@ package se.magnus.microservices.composite.post.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.datetime.DateFormatter;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import se.magnus.api.composite.post.*;
@@ -13,7 +14,9 @@ import se.magnus.api.core.image.Image;
 import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.ServiceUtil;
 
+import java.io.Console;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,8 +54,8 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 
 			if (body.getComments() != null) {
 				body.getComments().forEach(r -> {
-					Comment comment = new Comment(body.getPostId(), r.getCommmentId(), r.getCommentDate(),
-							r.getCommentText(), null);
+					Comment comment = new Comment(body.getPostId(), r.getCommentId(), r.getCommentText(),
+							r.getCommentDate(), null);
 					integration.createComment(comment);
 				});
 			}
@@ -124,7 +127,7 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 
 		// 4. Copy summary image info, if available
 		List<ImageSummary> imageSummaries = (images == null) ? null
-				: images.stream().map(r -> new ImageSummary(r.getImageId(), r.getUploadDate(), r.getImageUrl()))
+				: images.stream().map(r -> new ImageSummary(r.getImageId(), r.getImageUrl(), r.getUploadDate()))
 						.collect(Collectors.toList());
 
 		// 5. Create info regarding the involved microservices addresses
@@ -136,7 +139,7 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 		ServiceAddresses serviceAddresses = new ServiceAddresses(serviceAddress, postAddress, commentAddress,
 				reactionAddress, imageAddress);
 
-		return new PostAggregate(postId, typeOfPost, postedOn, postCaption, reactionSummaries, commentSummaries,
+		return new PostAggregate(postId, typeOfPost, postCaption, postedOn, reactionSummaries, commentSummaries,
 				imageSummaries, serviceAddresses);
 	}
 }

@@ -11,6 +11,36 @@ spring.datasource:
 
 spring.datasource.hikari.initializationFailTimeout: 60000
 
+spring.cloud.stream:
+  defaultBinder: rabbit
+  default.contentType: application/json
+  bindings.input:
+    destination: comments
+    group: commentsGroup
+
+spring.cloud.stream.bindings.input.consumer:
+  maxAttempts: 3
+  backOffInitialInterval: 500
+  backOffMaxInterval: 1000
+  backOffMultiplier: 2.0
+
+spring.cloud.stream.rabbit.bindings.input.consumer:
+  autoBindDlq: true
+  republishToDlq: true
+
+spring.cloud.stream.kafka.bindings.input.consumer:
+  enableDlq: true
+
+spring.cloud.stream.kafka.binder:
+  brokers: 127.0.0.1
+  defaultBrokerPort: 9092
+
+spring.rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  username: guest
+  password: guest
+
 logging:
   level:
     root: INFO
@@ -18,6 +48,8 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+management.endpoint.health.show-details: "ALWAYS"
+management.endpoints.web.exposure.include: "*"
 ---
 spring.profiles: docker
 
@@ -25,3 +57,7 @@ spring.datasource:
   url: jdbc:mysql://mysql1/comment-db
 
 server.port: 8081
+
+spring.rabbitmq.host: rabbitmq
+
+spring.cloud.stream.kafka.binder.brokers: kafka
