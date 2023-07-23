@@ -27,11 +27,12 @@ import static se.magnus.api.event.Event.Type.DELETE;
 import java.time.LocalDate;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment=RANDOM_PORT, properties = {"spring.data.mongodb.port: 0"})
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = { "spring.data.mongodb.port: 0",
+		"eureka.client.enabled=false" })
 public class PostServiceApplicationTests {
 
-    @Autowired
-    private WebTestClient client;
+	@Autowired
+	private WebTestClient client;
 
 	@Autowired
 	private PostRepository repository;
@@ -53,15 +54,14 @@ public class PostServiceApplicationTests {
 		int postId = 1;
 
 		assertNull(repository.findByPostId(postId).block());
-		assertEquals(0, (long)repository.count().block());
+		assertEquals(0, (long) repository.count().block());
 
 		sendCreatePostEvent(postId);
 
 		assertNotNull(repository.findByPostId(postId).block());
-		assertEquals(1, (long)repository.count().block());
+		assertEquals(1, (long) repository.count().block());
 
-		getAndVerifyPost(postId, OK)
-            .jsonPath("$.postId").isEqualTo(postId);
+		getAndVerifyPost(postId, OK).jsonPath("$.postId").isEqualTo(postId);
 	}
 
 	@Test
@@ -79,8 +79,8 @@ public class PostServiceApplicationTests {
 			sendCreatePostEvent(postId);
 			fail("Expected a MessagingException here!");
 		} catch (MessagingException me) {
-			if (me.getCause() instanceof InvalidInputException)	{
-				InvalidInputException iie = (InvalidInputException)me.getCause();
+			if (me.getCause() instanceof InvalidInputException) {
+				InvalidInputException iie = (InvalidInputException) me.getCause();
 				assertEquals("Duplicate key, Post Id: " + postId, iie.getMessage());
 			} else {
 				fail("Expected a InvalidInputException as the root cause!");
@@ -105,28 +105,25 @@ public class PostServiceApplicationTests {
 	@Test
 	public void getPostInvalidParameterString() {
 
-		getAndVerifyPost("/no-integer", BAD_REQUEST)
-            .jsonPath("$.path").isEqualTo("/post/no-integer")
-            .jsonPath("$.message").isEqualTo("Type mismatch.");
+		getAndVerifyPost("/no-integer", BAD_REQUEST).jsonPath("$.path").isEqualTo("/post/no-integer")
+				.jsonPath("$.message").isEqualTo("Type mismatch.");
 	}
 
 	@Test
 	public void getPostNotFound() {
 
 		int postIdNotFound = 13;
-		getAndVerifyPost(postIdNotFound, NOT_FOUND)
-            .jsonPath("$.path").isEqualTo("/post/" + postIdNotFound)
-            .jsonPath("$.message").isEqualTo("No post found for postId: " + postIdNotFound);
+		getAndVerifyPost(postIdNotFound, NOT_FOUND).jsonPath("$.path").isEqualTo("/post/" + postIdNotFound)
+				.jsonPath("$.message").isEqualTo("No post found for postId: " + postIdNotFound);
 	}
 
 	@Test
 	public void getPostInvalidParameterNegativeValue() {
 
-        int postIdInvalid = -1;
+		int postIdInvalid = -1;
 
-		getAndVerifyPost(postIdInvalid, UNPROCESSABLE_ENTITY)
-            .jsonPath("$.path").isEqualTo("/post/" + postIdInvalid)
-            .jsonPath("$.message").isEqualTo("Invalid postId: " + postIdInvalid);
+		getAndVerifyPost(postIdInvalid, UNPROCESSABLE_ENTITY).jsonPath("$.path").isEqualTo("/post/" + postIdInvalid)
+				.jsonPath("$.message").isEqualTo("Invalid postId: " + postIdInvalid);
 	}
 
 	private WebTestClient.BodyContentSpec getAndVerifyPost(int postId, HttpStatus expectedStatus) {
@@ -134,13 +131,8 @@ public class PostServiceApplicationTests {
 	}
 
 	private WebTestClient.BodyContentSpec getAndVerifyPost(String postIdPath, HttpStatus expectedStatus) {
-		return client.get()
-			.uri("/post" + postIdPath)
-			.accept(APPLICATION_JSON)
-			.exchange()
-			.expectStatus().isEqualTo(expectedStatus)
-			.expectHeader().contentType(APPLICATION_JSON)
-			.expectBody();
+		return client.get().uri("/post" + postIdPath).accept(APPLICATION_JSON).exchange().expectStatus()
+				.isEqualTo(expectedStatus).expectHeader().contentType(APPLICATION_JSON).expectBody();
 	}
 
 	private void sendCreatePostEvent(int postId) {

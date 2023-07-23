@@ -29,8 +29,8 @@ import static se.magnus.api.event.Event.Type.DELETE;
 import java.time.LocalDate;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = { "spring.datasource.url=jdbc:h2:mem:comment-db" })
-
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = { "logging.level.se.magnus=DEBUG",
+		"eureka.client.enabled=false", "spring.datasource.url=jdbc:h2:mem:comment-db" })
 public class CommentServiceApplicationTests {
 
 	@Autowired
@@ -142,8 +142,7 @@ public class CommentServiceApplicationTests {
 		return getAndVerifyCommentsByPostId("?postId=" + postId, expectedStatus);
 	}
 
-	private WebTestClient.BodyContentSpec getAndVerifyCommentsByPostId(String postIdQuery,
-			HttpStatus expectedStatus) {
+	private WebTestClient.BodyContentSpec getAndVerifyCommentsByPostId(String postIdQuery, HttpStatus expectedStatus) {
 		return client.get().uri("/comment" + postIdQuery).accept(APPLICATION_JSON).exchange().expectStatus()
 				.isEqualTo(expectedStatus).expectHeader().contentType(APPLICATION_JSON).expectBody();
 	}

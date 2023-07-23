@@ -1,6 +1,20 @@
 server.port: 7004
 server.error.include-message: always
 
+spring.application.name: image
+
+app.eureka-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
 # Strongly recommend to set this property to "none" in a production environment!
 spring.jpa.hibernate.ddl-auto: update
 
@@ -61,3 +75,5 @@ server.port: 8081
 spring.rabbitmq.host: rabbitmq
 
 spring.cloud.stream.kafka.binder.brokers: kafka
+
+app.eureka-server: eureka

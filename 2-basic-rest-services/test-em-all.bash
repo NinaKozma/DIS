@@ -83,6 +83,7 @@ function waitForService() {
             echo -n ", retry #$n "
         fi
     done
+    echo "DONE, continues..."
 }
 
 function testCompositeCreated() {
@@ -197,7 +198,7 @@ function setupTestdata() {
         {"imageId":2,"imageUrl":"image url 2","postedOn":"2023-07-15"},
         {"imageId":3,"imageUrl":"image url 3","postedOn":"2023-07-15"}
     ]}'
-    recreateComposite 1 "$body"
+    recreateComposite "$POST_ID_REA_COMM_IMG" "$body"
 
 }
 

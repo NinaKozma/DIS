@@ -1,6 +1,20 @@
 server.port: 7002
 server.error.include-message: always
 
+spring.application.name: reaction
+
+app.eureka-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
 spring.data.mongodb:
   host: localhost
   port: 27017
@@ -54,3 +68,5 @@ server.port: 8081
 spring.rabbitmq.host: rabbitmq
 
 spring.cloud.stream.kafka.binder.brokers: kafka
+
+app.eureka-server: eureka

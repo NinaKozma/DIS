@@ -34,7 +34,7 @@ import static reactor.core.publisher.Mono.just;
 import java.time.LocalDate;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment=RANDOM_PORT, properties = {"eureka.client.enabled=false"})
 public class PostCompositeServiceApplicationTests {
 
 	private static final int POST_ID_OK = 1;

@@ -136,8 +136,8 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 		String reactionAddress = (reactions != null && reactions.size() > 0) ? reactions.get(0).getServiceAddress()
 				: "";
 		String imageAddress = (images != null && images.size() > 0) ? images.get(0).getServiceAddress() : "";
-		ServiceAddresses serviceAddresses = new ServiceAddresses(serviceAddress, postAddress, commentAddress,
-				reactionAddress, imageAddress);
+		ServiceAddresses serviceAddresses = new ServiceAddresses(serviceAddress, postAddress, reactionAddress,
+				commentAddress, imageAddress);
 
 		return new PostAggregate(postId, typeOfPost, postCaption, postedOn, reactionSummaries, commentSummaries,
 				imageSummaries, serviceAddresses);

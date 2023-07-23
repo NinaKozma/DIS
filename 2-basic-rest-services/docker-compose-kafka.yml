@@ -124,8 +124,6 @@ services:
   post-composite:
     build: microservices/post-composite-service
     mem_limit: 350m
-    ports:
-      - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - MANAGEMENT_HEALTH_RABBIT_ENABLED=false
@@ -140,6 +138,18 @@ services:
       - SPRING_CLOUD_STREAM_BINDINGS_OUTPUT-IMAGES_PRODUCER_PARTITION-COUNT=2
     depends_on:
       - kafka
+
+  eureka:
+    build: spring-cloud/eureka-server
+    mem_limit: 350m
+        
+  gateway:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    build: spring-cloud/gateway
+    mem_limit: 350m
+    ports:
+      - "8081:8081"
 
   # $ mongo
   mongodb:

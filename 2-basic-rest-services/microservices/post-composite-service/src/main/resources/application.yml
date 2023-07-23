@@ -52,20 +52,24 @@ api:
 server.port: 7000
 server.error.include-message: always
 
-app:
-  post-service:
-    host: localhost
-    port: 7001
-  reaction-service:
-    host: localhost
-    port: 7002
-  comment-service:
-    host: localhost
-    port: 7003
-  image-service:
-    host: localhost
-    port: 7004
+spring.application.name: post-composite
+
+app.eureka-server: localhost
     
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
+ribbon.ServerListRefreshInterval: 5000
+
+ribbon.NFLoadBalancerPingInterval: 5    
+
 spring.cloud.stream:
   defaultBinder: rabbit
   default.contentType: application/json
@@ -108,21 +112,9 @@ management.endpoints.web.exposure.include: "*"
 spring.profiles: docker
 
 server.port: 8081
-
-app:
-  post-service:
-    host: post
-    port: 8081
-  reaction-service:
-    host: reaction
-    port: 8081
-  comment-service:
-    host: comment
-    port: 8081
-  image-service:
-    host: image
-    port: 8081
     
 spring.rabbitmq.host: rabbitmq
 
 spring.cloud.stream.kafka.binder.brokers: kafka
+
+app.eureka-server: eureka

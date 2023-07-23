@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.health.*;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.web.reactive.function.client.WebClient;
 import se.magnus.microservices.composite.post.services.PostCompositeIntegration;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -60,22 +62,13 @@ public class PostCompositeServiceApplication {
 	}
 
 	@Autowired
-	HealthAggregator healthAggregator;
-
-	@Autowired
 	PostCompositeIntegration integration;
 
 	@Bean
-	ReactiveHealthIndicator coreServices() {
-
-		ReactiveHealthIndicatorRegistry registry = new DefaultReactiveHealthIndicatorRegistry(new LinkedHashMap<>());
-
-		registry.register("post", () -> integration.getPostHealth());
-		registry.register("reaction", () -> integration.getReactionHealth());
-		registry.register("comment", () -> integration.getCommentHealth());
-		registry.register("image", () -> integration.getImageHealth());
-
-		return new CompositeReactiveHealthIndicator(healthAggregator, registry);
+	@LoadBalanced
+	public WebClient.Builder loadBalancedWebClientBuilder() {
+		final WebClient.Builder builder = WebClient.builder();
+		return builder;
 	}
 
 	public static void main(String[] args) {
