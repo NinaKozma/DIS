@@ -53,13 +53,17 @@ server.port: 7000
 server.error.include-message: always
 
 spring.application.name: post-composite
-
-app.eureka-server: localhost
     
+app:
+  eureka-username: u
+  eureka-password: p
+  eureka-server: localhost
+  auth-server: localhost
+
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://${app.eureka-server}:8761/eureka/
+      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
     initialInstanceInfoReplicationIntervalSeconds: 5
     registryFetchIntervalSeconds: 5
   instance:
@@ -68,7 +72,7 @@ eureka:
 
 ribbon.ServerListRefreshInterval: 5000
 
-ribbon.NFLoadBalancerPingInterval: 5    
+ribbon.NFLoadBalancerPingInterval: 5   
 
 spring.cloud.stream:
   defaultBinder: rabbit
@@ -106,6 +110,8 @@ logging:
     root: INFO
     se.magnus: DEBUG
     
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json    
+    
 management.endpoint.health.show-details: "ALWAYS"
 management.endpoints.web.exposure.include: "*"
 ---
@@ -117,4 +123,6 @@ spring.rabbitmq.host: rabbitmq
 
 spring.cloud.stream.kafka.binder.brokers: kafka
 
-app.eureka-server: eureka
+app:
+  eureka-server: eureka
+  auth-server: auth-server

@@ -34,7 +34,9 @@ import static reactor.core.publisher.Mono.just;
 import java.time.LocalDate;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment=RANDOM_PORT, properties = {"eureka.client.enabled=false"})
+@SpringBootTest(webEnvironment = RANDOM_PORT, classes = { PostCompositeServiceApplication.class,
+		TestSecurityConfig.class }, properties = { "spring.main.allow-bean-definition-overriding=true",
+				"eureka.client.enabled=false" })
 public class PostCompositeServiceApplicationTests {
 
 	private static final int POST_ID_OK = 1;

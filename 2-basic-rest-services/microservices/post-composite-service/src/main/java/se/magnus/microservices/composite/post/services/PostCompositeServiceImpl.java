@@ -3,6 +3,11 @@ package se.magnus.microservices.composite.post.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.format.datetime.DateFormatter;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -14,6 +19,8 @@ import se.magnus.api.core.image.Image;
 import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.ServiceUtil;
 
+
+import java.net.URL;
 import java.io.Console;
 import java.time.LocalDate;
 import java.util.Date;
@@ -25,6 +32,8 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PostCompositeServiceImpl.class);
 
+	private final SecurityContext nullSC = new SecurityContextImpl();
+
 	private final ServiceUtil serviceUtil;
 	private PostCompositeIntegration integration;
 
@@ -35,9 +44,16 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 	}
 
 	@Override
-	public void createCompositePost(PostAggregate body) {
+	public Mono<Void> createCompositePost(PostAggregate body) {
+		return ReactiveSecurityContextHolder.getContext().doOnSuccess(sc -> internalCreateCompositePost(sc, body))
+				.then();
+	}
+
+	public void internalCreateCompositePost(SecurityContext sc, PostAggregate body) {
 
 		try {
+
+			logAuthorizationInfo(sc);
 
 			LOG.debug("createCompositePost: creates a new composite entity for postId: {}", body.getPostId());
 
@@ -77,18 +93,25 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 
 	@Override
 	public Mono<PostAggregate> getCompositePost(int postId) {
-		return Mono
-				.zip(values -> createPostAggregate((Post) values[0], (List<Reaction>) values[1],
-						(List<Comment>) values[2], (List<Image>) values[3], serviceUtil.getServiceAddress()),
-						integration.getPost(postId), integration.getReactions(postId).collectList(),
-						integration.getComments(postId).collectList(), integration.getImages(postId).collectList())
+
+		return Mono.zip(
+				values -> createPostAggregate((SecurityContext) values[0], (Post) values[1], (List<Reaction>) values[2],
+						(List<Comment>) values[3], (List<Image>) values[4], serviceUtil.getServiceAddress()),
+				ReactiveSecurityContextHolder.getContext().defaultIfEmpty(nullSC), integration.getPost(postId),
+				integration.getReactions(postId).collectList(), integration.getComments(postId).collectList(),
+				integration.getImages(postId).collectList())
 				.doOnError(ex -> LOG.warn("getCompositePost failed: {}", ex.toString())).log();
 	}
 
 	@Override
-	public void deleteCompositePost(int postId) {
+	public Mono<Void> deleteCompositePost(int postId) {
+		return ReactiveSecurityContextHolder.getContext().doOnSuccess(sc -> internalDeleteCompositePost(sc, postId))
+				.then();
+	}
 
+	private void internalDeleteCompositePost(SecurityContext sc, int postId) {
 		try {
+			logAuthorizationInfo(sc);
 
 			LOG.debug("deleteCompositePost: Deletes a post aggregate for postId: {}", postId);
 
@@ -105,8 +128,10 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 		}
 	}
 
-	private PostAggregate createPostAggregate(Post post, List<Reaction> reactions, List<Comment> comments,
-			List<Image> images, String serviceAddress) {
+	private PostAggregate createPostAggregate(SecurityContext sc, Post post, List<Reaction> reactions,
+			List<Comment> comments, List<Image> images, String serviceAddress) {
+
+		logAuthorizationInfo(sc);
 
 		// 1. Setup post info
 		int postId = post.getPostId();
@@ -141,5 +166,31 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 
 		return new PostAggregate(postId, typeOfPost, postCaption, postedOn, reactionSummaries, commentSummaries,
 				imageSummaries, serviceAddresses);
+	}
+
+	private void logAuthorizationInfo(SecurityContext sc) {
+		if (sc != null && sc.getAuthentication() != null && sc.getAuthentication() instanceof JwtAuthenticationToken) {
+			Jwt jwtToken = ((JwtAuthenticationToken) sc.getAuthentication()).getToken();
+			logAuthorizationInfo(jwtToken);
+		} else {
+			LOG.warn("No JWT based Authentication supplied, running tests are we?");
+		}
+	}
+
+	private void logAuthorizationInfo(Jwt jwt) {
+		if (jwt == null) {
+			LOG.warn("No JWT supplied, running tests are we?");
+		} else {
+			if (LOG.isDebugEnabled()) {
+				URL issuer = jwt.getIssuer();
+				List<String> audience = jwt.getAudience();
+				Object subject = jwt.getClaims().get("sub");
+				Object scopes = jwt.getClaims().get("scope");
+				Object expires = jwt.getClaims().get("exp");
+
+				LOG.debug("Authorization info: Subject: {}, scopes: {}, expires {}: issuer: {}, audience: {}", subject,
+						scopes, expires, issuer, audience);
+			}
+		}
 	}
 }

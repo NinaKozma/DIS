@@ -9,8 +9,8 @@
 #   HOST=localhost PORT=7000 ./test-em-all.bash
 #
 : ${HOST=localhost}
-: ${PORT=8081}
-: ${POST_ID_REA_COMM_IMG=2}
+: ${PORT=8443}
+: ${POST_ID_REA_COMM_IMG=100}
 : ${POST_ID_NOT_FOUND=14}
 : ${POST_ID_NO_REA=114}
 : ${POST_ID_NO_COMM=214}
@@ -89,7 +89,7 @@ function waitForService() {
 function testCompositeCreated() {
 
     # Expect that the Post Composite for postId $POST_ID_REA_COMM_IMG has been created with three reactions and three comments
-    if ! assertCurl 200 "curl http://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG -s"
+    if ! assertCurl 200 "curl $AUTH -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG -s"
     then
         echo -n "FAIL"
         return 1
@@ -137,8 +137,8 @@ function recreateComposite() {
     local postId=$1
     local composite=$2
 
-    assertCurl 200 "curl -X DELETE http://$HOST:$PORT/post-composite/${postId} -s"
-    curl -X POST http://$HOST:$PORT/post-composite -H "Content-Type: application/json" --data "$composite"
+    assertCurl 200 "curl $AUTH -X DELETE -k https://$HOST:$PORT/post-composite/${postId} -s"
+    curl -X POST -k https://$HOST:$PORT/post-composite -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" --data "$composite"
 }
 
 function setupTestdata() {
@@ -218,50 +218,64 @@ then
     docker-compose up -d
 fi
 
-waitForService curl http://$HOST:$PORT/actuator/health
+waitForService curl -k https://$HOST:$PORT/actuator/health
+
+ACCESS_TOKEN=$(curl -k https://writer:secret@$HOST:$PORT/oauth/token -d grant_type=password -d username=magnus -d password=password -s | jq .access_token -r)
+AUTH="-H \"Authorization: Bearer $ACCESS_TOKEN\""
 
 setupTestdata
 
 waitForMessageProcessing
 
+
 # Verify that a normal request works, expect three reactions, three comments and three images
-assertCurl 200 "curl http://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG -s"
+assertCurl 200 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG $AUTH -s"
 assertEqual "$POST_ID_REA_COMM_IMG" $(echo $RESPONSE | jq .postId)
 assertEqual 3 $(echo $RESPONSE | jq ".reactions | length")
 assertEqual 3 $(echo $RESPONSE | jq ".comments | length")
 assertEqual 3 $(echo $RESPONSE | jq ".images | length")
 
 # Verify that a 404 (Not Found) error is returned for a non existing postId ($POST_ID_NOT_FOUND)
-assertCurl 404 "curl http://$HOST:$PORT/post-composite/$POST_ID_NOT_FOUND -s"
+assertCurl 404 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_NOT_FOUND $AUTH -s"
 
 # Verify that no reactions are returned for postId $POST_ID_NO_REA
-assertCurl 200 "curl http://$HOST:$PORT/post-composite/$POST_ID_NO_REA -s"
+assertCurl 200 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_NO_REA $AUTH -s"
 assertEqual "$POST_ID_NO_REA" $(echo $RESPONSE | jq .postId)
 assertEqual 0 $(echo $RESPONSE | jq ".reactions | length")
 assertEqual 3 $(echo $RESPONSE | jq ".comments | length")
 assertEqual 3 $(echo $RESPONSE | jq ".images | length")
 
 # Verify that no comments are returned for postId $POST_ID_NO_COMM
-assertCurl 200 "curl http://$HOST:$PORT/post-composite/$POST_ID_NO_COMM -s"
+assertCurl 200 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_NO_COMM $AUTH -s"
 assertEqual $POST_ID_NO_COMM $(echo $RESPONSE | jq .postId)
 assertEqual 3 $(echo $RESPONSE | jq ".reactions | length")
 assertEqual 0 $(echo $RESPONSE | jq ".comments | length")
 assertEqual 3 $(echo $RESPONSE | jq ".images | length")
 
 # Verify that no images are returned for postId $POST_ID_NO_IMG
-assertCurl 200 "curl http://$HOST:$PORT/post-composite/$POST_ID_NO_IMG -s"
+assertCurl 200 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_NO_IMG $AUTH -s"
 assertEqual $POST_ID_NO_IMG $(echo $RESPONSE | jq .postId)
 assertEqual 3 $(echo $RESPONSE | jq ".reactions | length")
 assertEqual 3 $(echo $RESPONSE | jq ".comments | length")
 assertEqual 0 $(echo $RESPONSE | jq ".images | length")
 
 # Verify that a 422 (Unprocessable Entity) error is returned for a postId that is out of range (-1)
-assertCurl 422 "curl http://$HOST:$PORT/post-composite/-1 -s"
+assertCurl 422 "curl -k https://$HOST:$PORT/post-composite/-1 $AUTH -s"
 assertEqual "\"Invalid postId: -1\"" "$(echo $RESPONSE | jq .message)"
 
 # Verify that a 400 (Bad Request) error error is returned for a postId that is not a number, i.e. invalid format
-assertCurl 400 "curl http://$HOST:$PORT/post-composite/invalidPostId -s"
+assertCurl 400 "curl -k https://$HOST:$PORT/post-composite/invalidPostId $AUTH -s"
 assertEqual "\"Type mismatch.\"" "$(echo $RESPONSE | jq .message)"
+
+# Verify that a request without access token fails on 401, Unauthorized
+assertCurl 401 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG -s"
+ 
+# Verify that the reader - client with only read scope can call the read API but not delete API.
+READER_ACCESS_TOKEN=$(curl -k https://reader:secret@$HOST:$PORT/oauth/token -d grant_type=password -d username=magnus -d password=password -s | jq .access_token -r)
+READER_AUTH="-H \"Authorization: Bearer $READER_ACCESS_TOKEN\""
+ 
+assertCurl 200 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG $READER_AUTH -s"
+assertCurl 403 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG $READER_AUTH -X DELETE -s"
 
 echo "End, all tests OK:" `date`
 
