@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Josh Cummings
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties = {"eureka.client.enabled=false"})
+@SpringBootTest(properties = { "eureka.client.enabled=false", "spring.cloud.config.enabled=false" })
 @AutoConfigureMockMvc
 public class OAuth2AuthorizationServerApplicationTests {
 
@@ -42,23 +42,17 @@ public class OAuth2AuthorizationServerApplicationTests {
 	MockMvc mvc;
 
 	@Test
-	public void requestTokenWhenUsingPasswordGrantTypeThenOk()
-			throws Exception {
+	public void requestTokenWhenUsingPasswordGrantTypeThenOk() throws Exception {
 
-		this.mvc.perform(post("/oauth/token")
-			.param("grant_type", "password")
-			.param("username", "magnus")
-			.param("password", "password")
-			.header("Authorization", "Basic cmVhZGVyOnNlY3JldA=="))
+		this.mvc.perform(post("/oauth/token").param("grant_type", "password").param("username", "magnus")
+				.param("password", "password").header("Authorization", "Basic cmVhZGVyOnNlY3JldA=="))
 				.andExpect(status().isOk());
 	}
 
 	@Test
-	public void requestJwkSetWhenUsingDefaultsThenOk()
-			throws Exception {
+	public void requestJwkSetWhenUsingDefaultsThenOk() throws Exception {
 
-		this.mvc.perform(get("/.well-known/jwks.json"))
-				.andExpect(status().isOk());
+		this.mvc.perform(get("/.well-known/jwks.json")).andExpect(status().isOk());
 	}
 
 }

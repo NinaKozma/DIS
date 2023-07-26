@@ -30,7 +30,8 @@ import java.time.LocalDate;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT, properties = { "logging.level.se.magnus=DEBUG",
-		"eureka.client.enabled=false", "spring.datasource.url=jdbc:h2:mem:image-db" })
+		"eureka.client.enabled=false", "spring.datasource.url=jdbc:h2:mem:image-db",
+		"spring.cloud.config.enabled=false", "server.error.include-message=always" })
 public class ImageServiceApplicationTests {
 
 	@Autowired

@@ -61,9 +61,6 @@ public class PostCompositeServiceApplication {
 						emptyList()));
 	}
 
-	@Autowired
-	PostCompositeIntegration integration;
-
 	@Bean
 	@LoadBalanced
 	public WebClient.Builder loadBalancedWebClientBuilder() {

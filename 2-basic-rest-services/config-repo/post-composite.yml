@@ -52,24 +52,6 @@ api:
 server.port: 7000
 server.error.include-message: always
 
-spring.application.name: post-composite
-    
-app:
-  eureka-username: u
-  eureka-password: p
-  eureka-server: localhost
-  auth-server: localhost
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
-    initialInstanceInfoReplicationIntervalSeconds: 5
-    registryFetchIntervalSeconds: 5
-  instance:
-    leaseRenewalIntervalInSeconds: 5
-    leaseExpirationDurationInSeconds: 5
-
 ribbon.ServerListRefreshInterval: 5000
 
 ribbon.NFLoadBalancerPingInterval: 5   
@@ -95,34 +77,34 @@ spring.cloud.stream:
       producer:
         required-groups: auditGroup
 
-spring.cloud.stream.kafka.binder:
-  brokers: 127.0.0.1
-  defaultBrokerPort: 9092
-
-spring.rabbitmq:
-  host: 127.0.0.1
-  port: 5672
-  username: guest
-  password: guest
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json    
 
 logging:
   level:
     root: INFO
     se.magnus: DEBUG
     
-spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json    
-    
-management.endpoint.health.show-details: "ALWAYS"
-management.endpoints.web.exposure.include: "*"
 ---
-spring.profiles: docker
+spring.profiles: streaming_partitioned
 
-server.port: 8081
-    
-spring.rabbitmq.host: rabbitmq
+spring.cloud.stream.bindings.output-posts.producer:
+  partition-key-expression: payload.key
+  partition-count: 2
 
-spring.cloud.stream.kafka.binder.brokers: kafka
+spring.cloud.stream.bindings.output-comments.producer:
+  partition-key-expression: payload.key
+  partition-count: 2
 
-app:
-  eureka-server: eureka
-  auth-server: auth-server
+spring.cloud.stream.bindings.output-reactions.producer:
+  partition-key-expression: payload.key
+  partition-count: 2
+  
+spring.cloud.stream.bindings.output-images.producer:
+  partition-key-expression: payload.key
+  partition-count: 2
+
+---
+spring.profiles: kafka
+
+management.health.rabbit.enabled: false
+spring.cloud.stream.defaultBinder: kafka
