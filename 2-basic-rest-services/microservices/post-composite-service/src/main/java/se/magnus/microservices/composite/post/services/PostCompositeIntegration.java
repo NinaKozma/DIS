@@ -1,10 +1,12 @@
 package se.magnus.microservices.composite.post.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.messaging.MessageChannel;
@@ -12,6 +14,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import se.magnus.api.core.post.Post;
@@ -28,6 +31,8 @@ import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.HttpErrorInfo;
 
 import java.io.IOException;
+import java.net.URI;
+import java.time.Duration;
 
 import static reactor.core.publisher.Flux.empty;
 import static se.magnus.api.event.Event.Type.CREATE;
@@ -51,6 +56,8 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 
 	private MessageSources messageSources;
 
+	private final int postServiceTimeoutSec;
+
 	public interface MessageSources {
 
 		String OUTPUT_POSTS = "output-posts";
@@ -73,10 +80,11 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 
 	@Autowired
 	public PostCompositeIntegration(WebClient.Builder webClientBuilder, ObjectMapper mapper,
-			MessageSources messageSources) {
+			MessageSources messageSources, @Value("${app.post-service.timeoutSec}") int postServiceTimeoutSec) {
 		this.webClientBuilder = webClientBuilder;
 		this.mapper = mapper;
 		this.messageSources = messageSources;
+		this.postServiceTimeoutSec = postServiceTimeoutSec;
 	}
 
 	@Override
@@ -86,13 +94,18 @@ public class PostCompositeIntegration implements PostService, ReactionService, C
 		return body;
 	}
 
-	@Override
-	public Mono<Post> getPost(int postId) {
-		String url = postServiceUrl + "/post/" + postId;
+	@Retry(name = "post")
+	@CircuitBreaker(name = "post")
+	public Mono<Post> getPost(int postId, int delay, int faultPercent) {
+
+		URI url = UriComponentsBuilder
+				.fromUriString(postServiceUrl + "/post/{postId}?delay={delay}&faultPercent={faultPercent}")
+				.build(postId, delay, faultPercent);
 		LOG.debug("Will call the getPost API on URL: {}", url);
 
 		return getWebClient().get().uri(url).retrieve().bodyToMono(Post.class).log()
-				.onErrorMap(WebClientResponseException.class, ex -> handleException(ex));
+				.onErrorMap(WebClientResponseException.class, ex -> handleException(ex))
+				.timeout(Duration.ofSeconds(postServiceTimeoutSec));
 	}
 
 	@Override

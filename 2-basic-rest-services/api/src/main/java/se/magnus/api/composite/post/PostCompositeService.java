@@ -38,7 +38,11 @@ public interface PostCompositeService {
 			@ApiResponse(code = 404, message = "Not found, the specified id does not exist."),
 			@ApiResponse(code = 422, message = "Unprocessable entity, input parameters caused the processing to fail. See response message for more information.") })
 	@GetMapping(value = "/post-composite/{postId}", produces = "application/json")
-	Mono<PostAggregate> getCompositePost(@PathVariable int postId);
+	Mono<PostAggregate> getCompositePost(
+	        @PathVariable int postId,
+	        @RequestParam(value = "delay", required = false, defaultValue = "0") int delay,
+	        @RequestParam(value = "faultPercent", required = false, defaultValue = "0") int faultPercent
+	    );
 
 	/**
 	 * Sample usage:

@@ -1,5 +1,6 @@
 package se.magnus.microservices.composite.post.services;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,6 @@ import se.magnus.api.core.comment.Comment;
 import se.magnus.api.core.image.Image;
 import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.ServiceUtil;
-
 
 import java.net.URL;
 import java.io.Console;
@@ -92,12 +92,14 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 	}
 
 	@Override
-	public Mono<PostAggregate> getCompositePost(int postId) {
+	public Mono<PostAggregate> getCompositePost(int postId, int delay, int faultPercent) {
 
 		return Mono.zip(
 				values -> createPostAggregate((SecurityContext) values[0], (Post) values[1], (List<Reaction>) values[2],
 						(List<Comment>) values[3], (List<Image>) values[4], serviceUtil.getServiceAddress()),
-				ReactiveSecurityContextHolder.getContext().defaultIfEmpty(nullSC), integration.getPost(postId),
+				ReactiveSecurityContextHolder.getContext().defaultIfEmpty(nullSC),
+				integration.getPost(postId, delay, faultPercent).onErrorReturn(CallNotPermittedException.class,
+						getPostFallbackValue(postId)),
 				integration.getReactions(postId).collectList(), integration.getComments(postId).collectList(),
 				integration.getImages(postId).collectList())
 				.doOnError(ex -> LOG.warn("getCompositePost failed: {}", ex.toString())).log();
@@ -167,6 +169,19 @@ public class PostCompositeServiceImpl implements PostCompositeService {
 		return new PostAggregate(postId, typeOfPost, postCaption, postedOn, reactionSummaries, commentSummaries,
 				imageSummaries, serviceAddresses);
 	}
+	
+	  private Post getPostFallbackValue(int postId) {
+
+	        LOG.warn("Creating a fallback post for postId = {}", postId);
+
+	        if (postId == 13) {
+	            String errMsg = "Post Id: " + postId + " not found in fallback cache!";
+	            LOG.warn(errMsg);
+	            throw new NotFoundException(errMsg);
+	        }
+
+	        return new Post(postId, "Fallback post" + postId, "Fallback post", LocalDate.now(), serviceUtil.getServiceAddress());
+	    }
 
 	private void logAuthorizationInfo(SecurityContext sc) {
 		if (sc != null && sc.getAuthentication() != null && sc.getAuthentication() instanceof JwtAuthenticationToken) {

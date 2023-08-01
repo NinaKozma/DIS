@@ -20,6 +20,8 @@ import se.magnus.util.exceptions.InvalidInputException;
 import se.magnus.util.exceptions.NotFoundException;
 
 import static java.util.Collections.singletonList;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
@@ -46,7 +48,7 @@ public class PostCompositeServiceApplicationTests {
 	@Before
 	public void setUp() {
 
-		when(compositeIntegration.getPost(POST_ID_OK)).thenReturn(
+		when(compositeIntegration.getPost(eq(POST_ID_OK), anyInt(), anyInt())).thenReturn(
 				Mono.just(new Post(POST_ID_OK, "instagram post", "Enjoying...", LocalDate.now(), "mock-address")));
 		when(compositeIntegration.getReactions(POST_ID_OK))
 				.thenReturn(Flux.fromIterable(singletonList(new Reaction(POST_ID_OK, 1, "heart", "mock address"))));
@@ -55,10 +57,10 @@ public class PostCompositeServiceApplicationTests {
 		when(compositeIntegration.getImages(POST_ID_OK)).thenReturn(Flux.fromIterable(
 				singletonList(new Image(POST_ID_OK, 1, "Some image URL...", LocalDate.now(), "mock address"))));
 
-		when(compositeIntegration.getPost(POST_ID_NOT_FOUND))
+		when(compositeIntegration.getPost(eq(POST_ID_NOT_FOUND),  anyInt(), anyInt()))
 				.thenThrow(new NotFoundException("NOT FOUND: " + POST_ID_NOT_FOUND));
 
-		when(compositeIntegration.getPost(POST_ID_INVALID))
+		when(compositeIntegration.getPost(eq(POST_ID_INVALID), anyInt(), anyInt()))
 				.thenThrow(new InvalidInputException("INVALID: " + POST_ID_INVALID));
 	}
 

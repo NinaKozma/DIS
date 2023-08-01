@@ -4,6 +4,8 @@ services:
   post:
     build: microservices/post-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -17,6 +19,8 @@ services:
   reaction:
     build: microservices/reaction-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -30,6 +34,8 @@ services:
   comment:
     build: microservices/comment-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -43,6 +49,8 @@ services:
   image:
     build: microservices/image-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -56,6 +64,8 @@ services:
   post-composite:
     build: microservices/post-composite-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -65,32 +75,42 @@ services:
         condition: service_healthy
 
   eureka:
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     build: spring-cloud/eureka-server
     mem_limit: 350m
-        
-  gateway:
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+
+  gateway:
     build: spring-cloud/gateway
     mem_limit: 350m
     ports:
       - "8443:8443"
-      
-  auth-server:
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+
+  auth-server:
     build: spring-cloud/authorization-server
     mem_limit: 350m
-    
+    networks:
+      - my-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+
   config-server:
+    build: spring-cloud/config-server
+    mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,native
       - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
@@ -98,13 +118,13 @@ services:
       - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
     volumes:
       - $PWD/config-repo:/config-repo
-    build: spring-cloud/config-server
-    mem_limit: 350m
 
   # $ mongo
   mongodb:
     image: mongo:3.6.9
     mem_limit: 350m
+    networks:
+      - my-network 
     ports:
       - "27017:27017"
     command: mongod --smallfiles
@@ -118,6 +138,8 @@ services:
   mysql1:
     image: mysql:5.7
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - "3307:3306"
     environment:
@@ -134,6 +156,8 @@ services:
   mysql2:
       image: mysql:5.7
       mem_limit: 350m
+      networks:
+      - my-network
       ports:
         - "3308:3306"
       environment:
@@ -150,6 +174,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.7.8-management
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - 5672:5672
       - 15672:15672
@@ -158,3 +184,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      
+networks:
+  my-network:
+    name: my-network

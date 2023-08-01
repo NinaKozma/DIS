@@ -14,7 +14,9 @@ public interface PostService {
 	 * @return the post, if found, else null
 	 */
 	@GetMapping(value = "/post/{postId}", produces = "application/json")
-	Mono<Post> getPost(@PathVariable int postId);
+	Mono<Post> getPost(@PathVariable int postId,
+			@RequestParam(value = "delay", required = false, defaultValue = "0") int delay,
+			@RequestParam(value = "faultPercent", required = false, defaultValue = "0") int faultPercent);
 
 	void deletePost(@PathVariable int postId);
 }

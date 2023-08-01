@@ -77,7 +77,32 @@ spring.cloud.stream:
       producer:
         required-groups: auditGroup
 
-spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json    
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json 
+
+app.post-service.timeoutSec: 2
+
+resilience4j.retry:
+  backends:
+    post:
+      maxRetryAttempts: 3
+      waitDuration: 1000
+      retryExceptions:
+      - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+
+management.health.circuitbreakers.enabled: true
+
+resilience4j.circuitbreaker:
+  backends:
+    post:
+      registerHealthIndicator: true
+      ringBufferSizeInClosedState: 5
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10000
+      ringBufferSizeInHalfOpenState: 3
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      ignoreExceptions:
+        - se.magnus.util.exceptions.InvalidInputException
+        - se.magnus.util.exceptions.NotFoundException   
 
 logging:
   level:
