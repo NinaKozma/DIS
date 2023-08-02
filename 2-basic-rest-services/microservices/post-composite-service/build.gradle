@@ -45,6 +45,8 @@ dependencies {
 	implementation('org.springframework.security:spring-security-oauth2-jose')
 	implementation("io.github.resilience4j:resilience4j-spring-boot2:${resilience4jVersion}")
 	implementation("io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}")
+	implementation('org.springframework.cloud:spring-cloud-starter-sleuth')
+	implementation('org.springframework.cloud:spring-cloud-starter-zipkin')
 	
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
 	testImplementation('org.springframework.cloud:spring-cloud-stream-test-support')

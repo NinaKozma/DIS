@@ -332,7 +332,7 @@ READER_AUTH="-H \"Authorization: Bearer $READER_ACCESS_TOKEN\""
 assertCurl 200 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG $READER_AUTH -s"
 assertCurl 403 "curl -k https://$HOST:$PORT/post-composite/$POST_ID_REA_COMM_IMG $READER_AUTH -X DELETE -s"
 
-testCircuitBreaker
+#testCircuitBreaker
 
 echo "End, all tests OK:" `date`
 

@@ -51,6 +51,8 @@ dependencies {
 	implementation('org.springframework.retry:spring-retry')
 	implementation('mysql:mysql-connector-java')
 	testImplementation('com.h2database:h2')
+	implementation('org.springframework.cloud:spring-cloud-starter-sleuth')
+	implementation('org.springframework.cloud:spring-cloud-starter-zipkin')
 	
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
 	testImplementation('org.springframework.cloud:spring-cloud-stream-test-support')

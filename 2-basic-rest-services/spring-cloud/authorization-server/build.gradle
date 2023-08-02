@@ -36,6 +36,11 @@ dependencies {
 	implementation 'org.springframework.retry:spring-retry'
 
 	implementation 'com.nimbusds:nimbus-jose-jwt:6.7'
+	
+	implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:2.2.3.RELEASE'
+	implementation 'org.springframework.cloud:spring-cloud-starter-zipkin:2.2.3.RELEASE'
+	implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit:3.0.6.RELEASE'
+	implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka:3.0.6.RELEASE'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

@@ -4,6 +4,8 @@ services:
   post:
     build: microservices/post-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_0
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -17,6 +19,8 @@ services:
   post-p1:
     build: microservices/post-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_1
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -30,6 +34,8 @@ services:
   reaction:
     build: microservices/reaction-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_0
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -43,6 +49,8 @@ services:
   reaction-p1:
     build: microservices/reaction-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_1
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -56,6 +64,8 @@ services:
   comment:
     build: microservices/comment-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_0
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -69,6 +79,8 @@ services:
   comment-p1:
     build: microservices/comment-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_1
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -82,6 +94,8 @@ services:
   image:
     build: microservices/image-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_0
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -95,6 +109,8 @@ services:
   image-p1:
     build: microservices/image-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_1
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -108,6 +124,8 @@ services:
   post-composite:
     build: microservices/post-composite-service
     mem_limit: 350m
+    networks:
+      - my-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
@@ -123,6 +141,8 @@ services:
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     build: spring-cloud/eureka-server
     mem_limit: 350m
+    networks:
+      - my-network
         
   gateway:
     environment:
@@ -131,6 +151,8 @@ services:
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     build: spring-cloud/gateway
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - "8443:8443"
       
@@ -141,6 +163,8 @@ services:
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     build: spring-cloud/authorization-server
     mem_limit: 350m
+    networks:
+      - my-network
     
   config-server:
     environment:
@@ -152,11 +176,15 @@ services:
       - $PWD/config-repo:/config-repo
     build: spring-cloud/config-server
     mem_limit: 350m
+    networks:
+      - my-network
 
   # $ mongo
   mongodb:
     image: mongo:3.6.9
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - "27017:27017"
     command: mongod --smallfiles
@@ -170,6 +198,8 @@ services:
   mysql1:
     image: mysql:5.7
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - "3307:3306"
     environment:
@@ -186,6 +216,8 @@ services:
   mysql2:
     image: mysql:5.7
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - "3308:3306"
     environment:
@@ -202,6 +234,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.7.8-management
     mem_limit: 350m
+    networks:
+      - my-network
     ports:
       - 5672:5672
       - 15672:15672
@@ -210,3 +244,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      
+  zipkin:
+    image: openzipkin/zipkin:2.12.9
+    mem_limit: 512m
+    networks:
+      - my-network
+    environment:
+      - STORAGE_TYPE=mem
+      - RABBIT_ADDRESSES=rabbitmq
+    ports:
+      - 9411:9411
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+        
+networks:
+  my-network:
+    name: my-network
