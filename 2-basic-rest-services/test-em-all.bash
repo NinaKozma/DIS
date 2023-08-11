@@ -17,6 +17,7 @@
 : ${POST_ID_NO_IMG=313}
 
 function assertCurl() {
+
     local expectedHttpCode=$1
     local curlCmd="$2 -w \"%{http_code}\""
     local result=$(eval $curlCmd)
