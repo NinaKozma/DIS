@@ -31,15 +31,15 @@ api:
         In the following cases, only a partial response be created (used to simplify testing of error conditions)
 
         ## Post id 113
-        200 - Ok, but no Reactions will be returned
+        200 - Ok, but no reactions will be returned
 
         ## Post id 213
-        200 - Ok, but no Comments offers will be returned
+        200 - Ok, but no comments offers will be returned
         
          ## Post id 313
-        200 - Ok, but no Images will be returned
+        200 - Ok, but no images will be returned
 
-        ## Non numerical product id
+        ## Non numerical post id
         400 - A <b>Bad Request</b> error will be returned
 
         ## Post id 13
