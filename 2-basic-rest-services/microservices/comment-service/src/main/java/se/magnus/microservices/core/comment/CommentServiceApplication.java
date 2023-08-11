@@ -19,23 +19,19 @@ import java.util.concurrent.Executors;
 public class CommentServiceApplication {
 
 	private static final Logger LOG = LoggerFactory.getLogger(CommentServiceApplication.class);
-	
+
 	private final Integer connectionPoolSize;
 
 	@Autowired
-	public CommentServiceApplication(
-		@Value("${spring.datasource.maximum-pool-size:10}")
-		Integer connectionPoolSize
-	) {
+	public CommentServiceApplication(@Value("${spring.datasource.maximum-pool-size:10}") Integer connectionPoolSize) {
 		this.connectionPoolSize = connectionPoolSize;
 	}
 
-    @Bean
-    public Scheduler jdbcScheduler() {
-        LOG.info("Creates a jdbcScheduler with connectionPoolSize = " + connectionPoolSize);
-        return Schedulers.fromExecutor(Executors.newFixedThreadPool(connectionPoolSize));
-    }
-
+	@Bean
+	public Scheduler jdbcScheduler() {
+		LOG.info("Creates a jdbcScheduler with connectionPoolSize = " + connectionPoolSize);
+		return Schedulers.fromExecutor(Executors.newFixedThreadPool(connectionPoolSize));
+	}
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext ctx = SpringApplication.run(CommentServiceApplication.class, args);

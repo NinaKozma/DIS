@@ -12,9 +12,9 @@
 : ${PORT=8443}
 : ${POST_ID_REA_COMM_IMG=2}
 : ${POST_ID_NOT_FOUND=13}
-: ${POST_ID_NO_REA=114}
-: ${POST_ID_NO_COMM=214}
-: ${POST_ID_NO_IMG=314}
+: ${POST_ID_NO_REA=113}
+: ${POST_ID_NO_COMM=213}
+: ${POST_ID_NO_IMG=313}
 
 
 function assertCurl() {

@@ -28,8 +28,25 @@ api:
         (technical information regarding the addresses of the microservices that created the response)
 
         # Expected partial and error responses
-        1. If no post information is found, a <b>404 - Not Found</b> error will be returned
-        1. In no reactions, images or comments are found for a post, a partial response will be returned
+        In the following cases, only a partial response be created (used to simplify testing of error conditions)
+
+        ## Post id 113
+        200 - Ok, but no Reactions will be returned
+
+        ## Post id 213
+        200 - Ok, but no Comments offers will be returned
+        
+         ## Post id 313
+        200 - Ok, but no Images will be returned
+
+        ## Non numerical product id
+        400 - A <b>Bad Request</b> error will be returned
+
+        ## Post id 13
+        404 - A <b>Not Found</b> error will be returned
+
+        ## Negative Post ids
+        422 - An <b>Unprocessable Entity</b> error will be returned
 
     create-composite-post:
       description: Creates a composite post
