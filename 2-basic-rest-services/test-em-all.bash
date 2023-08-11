@@ -16,7 +16,6 @@
 : ${POST_ID_NO_COMM=213}
 : ${POST_ID_NO_IMG=313}
 
-
 function assertCurl() {
 
     local expectedHttpCode=$1
