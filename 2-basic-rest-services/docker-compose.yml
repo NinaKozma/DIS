@@ -181,8 +181,8 @@ services:
       - 15672:15672
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
-      interval: 10s
-      timeout: 5s
+      interval: 20s
+      timeout: 10s
       retries: 10
      
   zipkin:
